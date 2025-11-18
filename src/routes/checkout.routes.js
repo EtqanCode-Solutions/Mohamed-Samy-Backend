@@ -877,6 +877,108 @@ export function createCheckoutRouter(models) {
     }
   });
 
+
+
+    // ---------------------------------
+  // 6) الكورسات اللي الطالب اشتراها (مشترياتي)
+  // ---------------------------------
+  router.get('/my-courses', async (req, res, next) => {
+    try {
+      const studentId = req.user?.id;
+      if (!studentId) {
+        return res.status(401).json({
+          success: false,
+          message: 'غير مصرح',
+        });
+      }
+
+      // نجيب كل الطلبات المدفوعه للطالب (حد أقصى 100 طلب)
+      const orders = await OrderSqlite.findAll({
+        where: { studentId, status: 'paid' },
+        order: [['updatedAtLocal', 'DESC']],
+        limit: 100,
+      });
+
+      if (!orders.length) {
+        return res.json({
+          success: true,
+          data: { items: [] },
+        });
+      }
+
+      const orderIds = orders.map((o) => o.id);
+
+      // العناصر اللي نوعها COURSE
+      const items = await OrderItemSqlite.findAll({
+        where: {
+          orderId: orderIds,
+          itemType: 'COURSE',
+        },
+        order: [['id', 'DESC']],
+      });
+
+      if (!items.length) {
+        return res.json({
+          success: true,
+          data: { items: [] },
+        });
+      }
+
+      // الكورسات المستخدمة في الـ items
+      const courseIds = Array.from(
+        new Set(items.map((it) => it.itemId).filter(Boolean))
+      );
+
+      const courses = await CourseSqlite.findAll({
+        where: { id: courseIds },
+      });
+
+      const courseMap = new Map();
+      for (const c of courses) {
+        courseMap.set(c.id, c);
+      }
+
+      const orderMap = new Map();
+      for (const o of orders) {
+        orderMap.set(o.id, o);
+      }
+
+      const result = [];
+      for (const it of items) {
+        const course = courseMap.get(it.itemId);
+        const order = orderMap.get(it.orderId);
+
+        // لو الكورس اتحذف / مش موجود → نتجاهله
+        if (!course || course.isDeleted) continue;
+
+        const purchasedAt =
+          order?.updatedAtLocal ||
+          order?.createdAt ||
+          it.createdAt ||
+          new Date();
+
+        const priceCents = Number(it.priceCents) || 0;
+        const priceEGP = Math.round(priceCents / 100);
+
+        result.push({
+          courseId: course.id,
+          title: course.title,
+          coverUrl: course.coverImageUrl || null, // لو عندك حقل للصورة
+          priceCents,
+          priceEGP,
+          purchasedAt,
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: { items: result },
+      });
+    } catch (e) {
+      next(e);
+    }
+  });
+
   return router;
 }
 
