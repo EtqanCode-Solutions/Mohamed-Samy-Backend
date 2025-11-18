@@ -1,0 +1,27 @@
+{
+  "name": "backend-gabr",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "fix:sqlite:lessons-kind": "node scripts/sqlite-fix-kind.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16",
+    "express": "^4",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "mysql2": "^3",
+    "nodemailer": "^7.0.9",
+    "sequelize": "^6",
+    "sqlite3": "^5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^9"
+  }
+}
